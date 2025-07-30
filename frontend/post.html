@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Blog Post</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="post"></div>
+  <div id="comments"></div>
+  <h3>Add a Comment</h3>
+  <form id="commentForm">
+    <textarea name="text" placeholder="Write your comment..." required></textarea><br>
+    <button type="submit">Submit</button>
+  </form>
+  <p id="comment-status"></p>
+  <script>
+    // Get post ID from URL (e.g. post.html?id=POSTID)
+    const params = new URLSearchParams(window.location.search);
+    const postId = params.get('id');
+
+    function loadPost() {
+      fetch(`http://localhost:3000/api/posts/${postId}`)
+        .then(res => res.json())
+        .then(data => {
+          const { post, comments } = data;
+          document.getElementById('post').innerHTML = `
+            <h1>${post.title}</h1>
+            <p>By ${post.author.username} on ${new Date(post.createdAt).toLocaleString()}</p>
+            <p>${post.body}</p>
+          `;
+          document.getElementById('comments').innerHTML =
+            '<h3>Comments</h3>' +
+            comments.map(c =>
+              `<div><b>${c.author.username}:</b> ${c.text} <span style="color:gray">(on ${new Date(c.createdAt).toLocaleString()})</span></div>`
+            ).join('');
+        });
+    }
+
+    loadPost();
+
+    document.getElementById('commentForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const text = this.text.value;
+      const token = localStorage.getItem('token');
+      if (!token) {
+        document.getElementById('comment-status').textContent = "Login required to comment.";
+        return;
+      }
+      const res = await fetch(`http://localhost:3000/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ text })
+      });
+      if (res.status === 201) {
+        document.getElementById('comment-status').textContent = "Comment added!";
+        this.reset();
+        loadPost();
+      } else {
+        const data = await res.json();
+        document.getElementById('comment-status').textContent = data.message || "Failed to add comment.";
+      }
+    };
+  </script>
+</body>
+</html>
+

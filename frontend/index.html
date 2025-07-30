@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="styles.css">
+  <title>Blog Platform</title>
+</head>
+<body>
+  <h1>All Blog Posts</h1>
+  <div id="posts"></div>
+  <script>
+    fetch('http://localhost:3000/api/posts')
+      .then(res => res.json())
+      .then(posts => {
+        document.getElementById('posts').innerHTML =
+          posts.map(
+            post => `<div>
+               <h2><a href="post.html?id=${post._id}">${post.title}</a></h2>
+               <p>by ${post.author.username} on ${new Date(post.createdAt).toLocaleString()}</p>
+             </div>`
+          ).join('');
+      });
+  </script>
+</body>
+</html>
